@@ -1,0 +1,4 @@
+"cgroup_parent": "/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pode3beaa17_faf6_4647_867e_261c49704ace.slice",
+uid: e3beaa17-faf6-4647-867e-261c49704ace
+
+bpf_printk("sched_switch: prev_pid=%d -> next_pid=%d\n", prev_pid, next_pid);
