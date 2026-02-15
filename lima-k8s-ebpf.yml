@@ -70,11 +70,8 @@ provision:
     # Installing kubeadm, kubelet and kubectl
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
-    apt-get install -y apt-transport-https ca-certificates curl
+    apt-get install -y apt-transport-https curl
 
-    cp /Users/nhatle/projects/ebpf/certs/*.crt /usr/local/share/ca-certificates/
-    chmod 644 /usr/local/share/ca-certificates/{bc2,bc3,bc4,pypl1,pypl2}.crt && update-ca-certificates
-    
     VERSION=$(curl -L -k -s https://dl.k8s.io/release/stable.txt | sed -e 's/v//' | cut -d'.' -f1-2)
     # VERSION="1.32.0"
     echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${VERSION}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
@@ -95,21 +92,20 @@ provision:
   script: |
     #!/bin/bash
     set -eux -o pipefail
-    grep SystemdCgroup /etc/containerd/config.toml && exit 0
-    grep "version = 2" /etc/containerd/config.toml || exit 1
-    # Configuring the systemd cgroup driver
-    # Overriding the sandbox (pause) image
-    cat <<EOF >>/etc/containerd/config.toml
-      [plugins]
-        [plugins."io.containerd.grpc.v1.cri"]
-          sandbox_image = "$(kubeadm config images list | grep pause | sort -r | head -n1)"
-          [plugins."io.containerd.grpc.v1.cri".containerd]
-            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-                runtime_type = "io.containerd.runc.v2"
-                [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-                  SystemdCgroup = true
-    EOF
+    # If containerd already configured for systemd cgroup, skip
+    if grep -q SystemdCgroup /etc/containerd/config.toml 2>/dev/null; then
+      exit 0
+    fi
+    # Generate a clean default config and enable SystemdCgroup
+    containerd config default > /etc/containerd/config.toml
+    sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml || true
+    # Attempt to override the pause (sandbox) image if kubeadm is available
+    if command -v kubeadm >/dev/null 2>&1; then
+      PAUSE_IMG=$(kubeadm config images list | grep pause | sort -r | head -n1 || true)
+      if [ -n "$PAUSE_IMG" ]; then
+        awk -v PAUSE="$PAUSE_IMG" '1; $0 ~ "^\[plugins\.'""io.containerd.grpc.v1.cri""'\]$" {print "  sandbox_image = \""PAUSE"\""}' /etc/containerd/config.toml > /etc/containerd/config.toml.tmp && mv /etc/containerd/config.toml.tmp /etc/containerd/config.toml || true
+      fi
+    fi
     systemctl restart containerd
 # See <https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/>
 - mode: system
@@ -152,9 +148,13 @@ provision:
     #!/bin/bash
     set -eux -o pipefail
     export KUBECONFIG=/etc/kubernetes/admin.conf
+    # Ensure the kubeconfig server points to localhost so the host can use it
+    if [ -f /etc/kubernetes/admin.conf ]; then
+      sed -e "/server:/ s|https://.*:\([0-9]*\)$|https://127.0.0.1:\1|" -i /etc/kubernetes/admin.conf || true
+    fi
     mkdir -p {{.Home}}/.kube
-    cp -f $KUBECONFIG {{.Home}}/.kube/config
-    chown -R {{.User}} {{.Home}}/.kube
+    cp -f $KUBECONFIG {{.Home}}/.kube/config || true
+    chown -R {{.User}} {{.Home}}/.kube || true
 probes:
 - description: "kubeadm to be installed"
   script: |
