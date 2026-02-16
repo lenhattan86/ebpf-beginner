@@ -11,13 +11,37 @@ Each lesson folder contains:
 
 ## Available Lessons
 
+### Foundational (Lessons 0-10)
+
 | Folder | Name | Topic | Description |
 |--------|------|-------|-------------|
-| `lesson-01-helloworld/` | Hello World | Basic Tracepoint | Hello World with ring buffer output, attach to sys_enter_openat |
-| `lesson-02-kprobe/` | kprobe Monitoring | Kernel Probes | Monitor unlink() syscalls using kprobe, read kernel strings |
-| `lesson-03-opensnoop/` | Opensnoop | Syscall Tracing | Capture open() syscalls with file paths and flags |
-| `lesson-04-execsnoop/` | Execsnoop | Process Tracing | Monitor process execution (sched_process_exec) |
-| `lesson-05-sigsnoop/` | Sigsnoop | Signal Tracing | Capture signal generation events |
+| `lesson-00-introduce/` | Introduction | Core Concepts | Essential eBPF concepts, tools, and architecture overview |
+| `lesson-01-helloworld/` | Hello World | Basic Tracepoint | First eBPF program with ring buffer output |
+| `lesson-02-kprobe/` | kprobe Monitoring | Kernel Probes | Monitor syscalls using dynamic kernel probes |
+| `lesson-03-fentry-unlink/` | fentry Probes | Fast Function Probes | High-performance function entry probing (fentry) |
+| `lesson-04-opensnoop/` | Opensnoop | Syscall Tracing | Capture file open operations with global variable filtering |
+| `lesson-05-uprobe-bashreadline/` | Uprobe | User-Space Tracing | Monitor readline() library function calls |
+| `lesson-06-sigsnoop/` | Sigsnoop | Signal Tracing | Capture signal generation and delivery events |
+| `lesson-07-execsnoop/` | Execsnoop | Process Execution | Monitor process creation with execution details |
+| `lesson-08-exitsnoop/` | Exitsnoop | Process Exit | Track process termination events |
+| `lesson-09-runqlat/` | Runqlat | Scheduling Latency | Measure CPU scheduling latency with histograms |
+| `lesson-10-hardirqs/` | Hardirqs | Interrupt Tracing | Monitor hardware interrupt handling |
+
+### Advanced (Lessons 11-21)
+
+| Folder | Name | Topic | Description |
+|--------|------|-------|-------------|
+| `lesson-11-bootstrap/` | Bootstrap | Production eBPF | Complete libbpf-based project structure |
+| `lesson-12-profile/` | Profile | Performance Analysis | CPU profiling and flame graph generation |
+| `lesson-13-tcpconnlat/` | TCP Latency | Network Monitoring | TCP connection setup latency analysis |
+| `lesson-14-tcpstates/` | TCP States | Connection Tracking | TCP state transitions and RTT measurement |
+| `lesson-15-javagc/` | Java GC | USDT Tracing | Capture Java garbage collection events |
+| `lesson-16-memleak/` | Memory Leaks | Leak Detection | Identify memory leaks without stopping app |
+| `lesson-17-biopattern/` | Disk I/O | Storage Analysis | Classify I/O patterns and latency |
+| `lesson-18-further-reading/` | Resources | Reference | Curated learning materials and research papers |
+| `lesson-19-lsm-connect/` | LSM Security | Access Control | Implement security policies using LSM hooks |
+| `lesson-20-tc/` | Traffic Control | Network Shaping | Advanced packet manipulation and QoS |
+| `lesson-21-xdp/` | XDP | Packet Processing | Wire-speed packet processing in driver context |
 
 ## Building & Running
 
