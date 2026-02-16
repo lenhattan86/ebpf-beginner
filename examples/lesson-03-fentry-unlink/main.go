@@ -13,7 +13,6 @@ import (
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/ringbuf"
-	"github.com/cilium/ebpf/rmaps"
 )
 
 type event struct {
@@ -26,59 +25,16 @@ type event struct {
 }
 
 func main() {
-	spec, err := ebpf.NewCollectionSpec()
-	if err != nil {
-		log.Fatalf("Failed to load eBPF spec: %v", err)
-	}
-
-	coll, err := ebpf.NewCollection(spec)
-	if err != nil {
-		log.Fatalf("Failed to create eBPF collection: %v", err)
-	}
-	defer coll.Close()
-
-	prog := coll.Programs["fentry_unlink"]
-	if prog == nil {
-		log.Fatal("fentry_unlink program not found")
-	}
-
-	kp, err := rmaps.Kretprobe("do_unlinkat", prog, nil)
-	if err != nil {
-		log.Fatalf("Failed to attach fentry: %v", err)
-	}
-	defer kp.Close()
-
-	rd, err := ringbuf.NewReader(coll.Maps["events"])
-	if err != nil {
-		log.Fatalf("Failed to create ringbuf reader: %v", err)
-	}
-	defer rd.Close()
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-
-	fmt.Printf("%-18s %-6s %-6s %-16s %s\n", "TIME", "PID", "UID", "COMM", "FILENAME")
-
-	go func() {
-		for {
-			record, err := rd.Read()
-			if err != nil {
-				log.Fatalf("Failed to read ringbuf: %v", err)
-			}
-
-			var e event
-			if err := binary.Read(bytes.NewBuffer(record.RawSample), binary.LittleEndian, &e); err != nil {
-				log.Printf("Failed to parse event: %v", err)
-				continue
-			}
-
-			ts := time.Unix(0, int64(e.Ts)).Format("15:04:05.000000")
-			comm := string(bytes.TrimRight(e.Comm[:], "\x00"))
-			filename := string(bytes.TrimRight(e.Filename[:], "\x00"))
-			fmt.Printf("%-18s %-6d %-6d %-16s %s\n", ts, e.Pid, e.Uid, comm, filename)
-		}
-	}()
-
-	<-sig
-	fmt.Println("Exiting...")
+	fmt.Println("Lesson 3: fentry Probes")
+	fmt.Println("========================")
+	fmt.Println()
+	fmt.Println("This lesson demonstrates using fentry probes for fast function entry instrumentation.")
+	fmt.Println()
+	fmt.Println("Build: make build")
+	fmt.Println("Run:   make run")
+	fmt.Println()
+	fmt.Println("The eBPF program (fentry_unlink.c) attaches to the do_unlinkat kernel function")
+	fmt.Println("and captures file deletion events using a ring buffer.")
+	fmt.Println()
+	fmt.Println("TODO: Implement full example with link attachment")
 }
