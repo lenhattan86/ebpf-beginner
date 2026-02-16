@@ -1,4 +1,4 @@
-.PHONY: build run clean all
+.PHONY: build run clean all help
 
 CLANG ?= clang
 LLVM_STRIP ?= llvm-strip
@@ -16,11 +16,15 @@ CLANG_BPF_SYS_INCLUDES = $(shell clang -mdump-json -x c /dev/null | jq -r '.[] |
 
 all: build
 
-build: $(OUTPUT)/opensnoop.o
+vmlinux.h: $(VMLINUX_BTF)
+	@echo "Generating vmlinux.h from kernel BTF..."
+	$(BPFTOOL) btf dump file $(VMLINUX_BTF) format c > vmlinux.h
+
+build: vmlinux.h $(OUTPUT)/opensnoop.o
 	@mkdir -p $(OUTPUT)
 	go build -o $(OUTPUT)/opensnoop . 
 
-$(OUTPUT)/opensnoop.o: opensnoop.c
+$(OUTPUT)/opensnoop.o: opensnoop.c vmlinux.h
 	@mkdir -p $(OUTPUT)
 	$(CLANG) -O2 -target bpf $(INCLUDES) -c opensnoop.c -o $@
 
@@ -28,13 +32,14 @@ run: build
 	sudo $(OUTPUT)/opensnoop
 
 clean:
-	rm -rf $(OBJDIR)
+	rm -rf $(OBJDIR) vmlinux.h
 
 help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
 	@echo "  all       - Build everything (default)"
 	@echo "  build     - Build eBPF object and Go binary"
+	@echo "  vmlinux.h - Generate kernel type definitions"
 	@echo "  run       - Run the program with sudo"
-	@echo "  clean     - Remove build artifacts"
+	@echo "  clean     - Remove build artifacts and vmlinux.h"
 	@echo "  help      - Show this help message"

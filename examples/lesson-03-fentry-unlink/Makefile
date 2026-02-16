@@ -1,4 +1,4 @@
-.PHONY: build run clean all
+.PHONY: build run clean all help
 
 CLANG ?= clang
 LLVM_STRIP ?= llvm-strip
@@ -14,11 +14,15 @@ INCLUDES := -I$(LIBBPF_DIR)
 
 all: build
 
-build: $(OUTPUT)/fentry_unlink.o
+vmlinux.h: $(VMLINUX_BTF)
+	@echo "Generating vmlinux.h from kernel BTF..."
+	$(BPFTOOL) btf dump file $(VMLINUX_BTF) format c > vmlinux.h
+
+build: vmlinux.h $(OUTPUT)/fentry_unlink.o
 	@mkdir -p $(OUTPUT)
 	go build -o $(OUTPUT)/fentry-demo .
 
-$(OUTPUT)/fentry_unlink.o: fentry_unlink.c
+$(OUTPUT)/fentry_unlink.o: fentry_unlink.c vmlinux.h
 	@mkdir -p $(OUTPUT)
 	$(CLANG) -O2 -target bpf $(INCLUDES) -c fentry_unlink.c -o $@
 
@@ -26,7 +30,7 @@ run: build
 	sudo $(OUTPUT)/fentry-demo
 
 clean:
-	rm -rf $(OBJDIR)
+	rm -rf $(OBJDIR) vmlinux.h
 
 help:
 	@echo "Usage: make [target]"

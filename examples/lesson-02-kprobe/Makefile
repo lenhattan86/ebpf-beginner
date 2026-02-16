@@ -1,4 +1,4 @@
-.PHONY: build run clean all
+.PHONY: build run clean all help
 
 CLANG ?= clang
 LLVM_STRIP ?= llvm-strip
@@ -16,11 +16,15 @@ CLANG_BPF_SYS_INCLUDES = $(shell clang -mdump-json -x c /dev/null | jq -r '.[] |
 
 all: build
 
-build: $(OUTPUT)/kprobe_unlink.o
+vmlinux.h: $(VMLINUX_BTF)
+	@echo "Generating vmlinux.h from kernel BTF..."
+	$(BPFTOOL) btf dump file $(VMLINUX_BTF) format c > vmlinux.h
+
+build: vmlinux.h $(OUTPUT)/kprobe_unlink.o
 	@mkdir -p $(OUTPUT)
 	go build -o $(OUTPUT)/kprobe-demo .
 
-$(OUTPUT)/kprobe_unlink.o: kprobe_unlink.c
+$(OUTPUT)/kprobe_unlink.o: kprobe_unlink.c vmlinux.h
 	@mkdir -p $(OUTPUT)
 	$(CLANG) -O2 -target bpf $(INCLUDES) -c kprobe_unlink.c -o $@
 
@@ -28,7 +32,7 @@ run: build
 	sudo $(OUTPUT)/kprobe-demo
 
 clean:
-	rm -rf $(OBJDIR)
+	rm -rf $(OBJDIR) vmlinux.h
 
 help:
 	@echo "Usage: make [target]"
